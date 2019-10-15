@@ -1,0 +1,96 @@
+<div class="jumbotron text-center" style="margin-bottom:0">
+  <h1>DP900 Web Application</h1>
+</div>
+<div class="container-flex p-4">
+  <div class="row">
+    <!-- Left Area -->
+    <div class="col-sm-4 col-lg-3 col-xl-2">
+      <!-- Refresh Panel -->
+      <div class="row panelL panelRefresh pb-1">
+        <div class="col">
+          <form class="form-inline">
+            <div class="form-group mr-2">
+              <button type="button" class="btn btn-primary panelBtn my-2" id="btnRefresh"><i class="fas fa-sync"></i></button>
+            </div>
+            <div class="form-group mr-2 pb-2">
+              <label for="valRefresh" class="bmd-label-floating">Rate (s)</label>
+              <input type="number" class="form-control" id="valRefresh" value="1" min="1" max="5">
+            </div>
+          </form>
+          <form class="form-inline">
+            <div class="form-group mr-2 pb-2">
+              <label for="valIP" class="bmd-label-floating">IP Address</label>
+              <input type="text" pattern="^(?:(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])(\.(?!$)|$)){4}$" class="form-control" id="valIP" value="127.0.0.1">
+            </div>
+            <div class="form-group pb-2">
+              <label for="valPort" class="bmd-label-floating">Port</label>
+              <input type="number" class="form-control" id="valPort" value="8732">
+            </div>
+          </form>
+        </div>
+      </div>
+      <!-- Controller Only -->
+      <div class="row panelL panelController my-2">
+        <div class="col">
+          <div class="d-flex flex-column">
+            <!-- Remaining -->
+            <div class="my-2">Remaining:</div>
+            <!-- At Level / Elapsed -->
+            <div class="my-2">Elapsed:</div>
+            <!-- Total Time -->
+            <div class="my-2">Total Time:</div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="d-flex flex-column">
+            <div class="my-2" id="panelRemaining">00:00:00</div>
+            <div class="my-2" id="panelElapsed">00:00:00</div>
+            <div class="my-2" id="panelTotal">00:00:00</div>
+          </div>
+        </div>
+      </div>
+      <!-- Analyzer Only -->
+      <div class="row panelL panelAnalyzer my-2">
+        <div class="col">
+          <div class="d-flex flex-column">
+            <div class=""></div>
+          </div>
+        </div>
+      </div>
+      <!-- Buttons Panel -->
+      <div class="row panelL panelBtns my-2">
+        <div class="col">
+          <div class="d-flex flex-row justify-content-center align-items-center py-3">
+            <button type="button" class="btn btn-raised btn-sm panelBtn mx-1" id="btnInit">Init</button>
+            <button type="button" class="btn btn-raised btn-sm panelBtn mx-1" id="btnStart" disabled>Start</button>
+            <button type="button" class="btn btn-raised btn-sm panelBtn mx-1" id="btnResume" hidden disabled>Resume</button>
+            <button type="button" class="btn btn-raised btn-sm panelBtn mx-1" id="btnStop" disabled>Stop</button>
+            <button type="button" class="btn btn-raised btn-sm panelBtn mx-1" id="btnEnd" disabled>End</button>
+          </div>
+        </div>
+      </div>
+      <!-- Status Panel -->
+      <div class="row panelL panelStatus my-2 py-2">
+        <div class="col txtcmdStatus" id="cmdStatus">None</div>
+      </div>
+    </div>
+    <!-- Right Area -->
+    <div class="col-sm-8 col-lg-9 col-xl-10">
+      <ul class="nav nav-tabs bg-dark" id="systemTab" role="tablist">
+        <li class="nav-item">
+          <a class="nav-link active show" id="tab-Sys1" data-toggle="tab" href="#Sys1" aria-controls="Meas0" aria-selected="true">System1</a>
+        </li>
+        <button type="button" class="btn btn-info" id="btnAddTab"><i class="fas fa-plus"></i></button>
+        <button type="button" class="btn btn-danger" id="btnDelTab"><i class="fas fa-minus"></i></button>
+      </ul>
+      <div class="tabContent" id="sysTabContent">
+        <ul class="nav nav-tabs" id="testTab" role="tablist"></ul>
+        <div class="tabContent" id="testTabContent"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="jumbotron text-center footer" style="margin-bottom:0">
+  <p>Footer</p>
+</div>

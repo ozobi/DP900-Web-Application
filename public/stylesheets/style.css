@@ -1,0 +1,100 @@
+
+.panelL{
+  border-radius: 4px;
+  background-color: gainsboro;
+}
+
+.panelRefresh {
+
+}
+
+.panelRefresh .form-group {
+  margin: 0px;
+}
+
+.panelRefresh .form-inline {
+  margin: 0px;
+}
+
+#valRefresh {
+  width: 50px !important;
+}
+
+#valPort {
+  width: 60px !important;
+}
+
+#valIP {
+  width: 80px !important;
+}
+
+#systemTab {
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
+}
+
+#btnAddTab {
+  margin: 0;
+}
+
+.panelAnalyzer, .panelController {
+
+}
+
+.panelBtns {
+
+}
+
+.panelStatus {
+
+}
+
+.panelBtn {
+  margin-bottom: 0;
+}
+
+#btnInit {
+  color: var(--white);
+  background-color: var(--gray);
+  border-color: var(--gray);
+}
+
+#btnStart {
+  color: var(--white);
+  background-color: var(--green);
+  border-color: var(--green);
+}
+
+#btnResume {
+  color: var(--white);
+  background-color: var(--yellow);
+  border-color: var(--yellow);
+}
+
+#btnStop {
+  color: var(--white);
+  background-color: var(--orange);
+  border-color: var(--orange);
+}
+
+#btnEnd {
+  color: var(--white);
+  background-color: var(--red);
+  border-color: var(--red);
+}
+
+.footer {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  text-align: center;
+  height: 100px;
+}
+
+/* .kitchen-sink-drawer-static {
+  $custom-size: 500px;
+  @include bmd-drawer-x-out("250px"); // closed by default
+  @include bmd-drawer-x-in("100px"); // triggered with bmd-drawer-in
+  @include bmd-drawer-x-push(); // overlay by default, no other classes necessary
+} */

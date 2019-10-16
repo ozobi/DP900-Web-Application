@@ -6,21 +6,7 @@ var vInterval = 1000;
 var dataTest;
 var testState = 0;
 var sysTabNum = 2;
-var pageData;
-
-// Network
 var valIP, valPort;
-
-function initPage(){
-	if (localStorage.pageData) {
-		pageData=localStorage.getItem("pageData");
-	} else {
-		pageData=[{name:"System1",ip:"127.0.0.1",port:"8732"}];
-		localStorage.setItem("pageData", pageData);
-	};
-	valIP = $("#valIP").val();
-	valPort = $("#valPort").val();
-};
 
 function startInterval(){
 	fInterval = setInterval(function () {
@@ -31,10 +17,6 @@ function startInterval(){
 		});
 	},vInterval);
 };
-
-function addSystem(){
-	"<li class='nav-item'><a class='nav-link' id='tab-Sys" + sysTabNum + "' data-toggle='tab' href='#systemTab" + sysTabNum + "' role='tab' aria-controls='systemTab"+ sysTabNum + "' aria-selected='false'>System"+sysTabNum+"</a></li>"
-}
 
 function updateLayout(){
 	if (testState!=0) {
@@ -229,9 +211,6 @@ function formatBytes(bytes, decimals = 2) {
 }
 
 $(document).ready(function(){
-
-
-
 	valIP = $("#valIP").val();
 	valPort = $("#valPort").val();
 	// Initalize
@@ -275,19 +254,6 @@ $(document).ready(function(){
 		deleteTest();
 		btnState(4);
 	});
-	//
-	$("#btnAddTab").click( function(){
-		$("#btnAddTab").before(
-			"<li class='nav-item'><a class='nav-link' id='tab-Sys" + sysTabNum + "' data-toggle='tab' href='#systemTab" + sysTabNum + "' role='tab' aria-controls='systemTab"+ sysTabNum + "' aria-selected='false'>System"+sysTabNum+"</a></li>"
-		);
-		sysTabNum++;
-	});
-	$("#btnDelTab").click( function(){
-		$("#btnAddTab").before(
-
-		);
-		sysTabNum++;
-	});
 	// Refresh Button
 	$("#btnRefresh").click( function(){
 		$.post("/api/statusTest", {valIP: valIP, valPort: valPort}, function(data,status){
@@ -307,6 +273,17 @@ $(document).ready(function(){
 				startInterval();
 			};
 		};
+	});
+	//
+	$("#btnOpen").click( function(){
+		$.post("/api/openTest", {valIP: valIP, valPort: valPort, name:$("#nameTest").val()}, function(data,status){
+			$("#cmdStatus").text(data);
+		});
+	});
+	$("#btnClose").click( function(){
+		$.post("/api/closeTest", {valIP: valIP, valPort: valPort}, function(data,status){
+			$("#cmdStatus").text(data);
+		});
 	});
 	// Network
 	// IP

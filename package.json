@@ -23,9 +23,9 @@
 	"Remote Control"
   ],
   "author": "Onur Zobi",
-  "license": "GPL-3.0-or-later",
+  "license": "MIT",
   "bugs": {
     "url": "onur.zobi@dataphysics.com"
   },
-  "homepage": "http://www.dataphysics.com/",
+  "homepage": "http://www.dataphysics.com/"
 }

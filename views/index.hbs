@@ -1,5 +1,5 @@
 <nav class="navbar navbar-expand-md navbar-dark bg-dp">
-  <a class="navbar-brand" href="">DP900 Web Application</a>
+  <a class="navbar-brand" href=""><img src="images/logo.png" alt="Data Physics"></a>
   <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
     <span class="navbar-toggler-icon"></span>
   </button>
@@ -44,30 +44,56 @@
         </div>
       </div>
       <!-- Controller Only -->
-      <div class="row panelL panelController my-2">
+      <div class="row panelL panelController my-2 py-1" style="display: none;">
         <div class="col-4 offset-2 col-sm-6 offset-sm-0">
           <div class="d-flex flex-column">
-            <!-- Remaining -->
-            <div class="my-2">Remaining:</div>
-            <!-- At Level / Elapsed -->
-            <div class="my-2">Elapsed:</div>
-            <!-- Total Time -->
-            <div class="my-2">Total Time:</div>
+            <div class="my-1" id="panel1Txt1">Remaining:</div>
+            <div class="my-1" id="panel1Txt2">At Level:</div>
+            <div class="my-1" id="panel1Txt3">Total Time:</div>
           </div>
         </div>
         <div class="col-4 col-sm-6">
           <div class="d-flex flex-column">
-            <div class="my-2" id="panelRemaining">00:00:00</div>
-            <div class="my-2" id="panelElapsed">00:00:00</div>
-            <div class="my-2" id="panelTotal">00:00:00</div>
+            <div class="my-1" id="panel1Val1">-</div>
+            <div class="my-1" id="panel1Val2">-</div>
+            <div class="my-1" id="panel1Val3">-</div>
+          </div>
+        </div>
+      </div>
+      <div class="row panelL panelController my-2 py-1" style="display: none;">
+        <div class="col-4 offset-2 col-sm-6 offset-sm-0">
+          <div class="d-flex flex-column">
+            <div class="my-1" id="panel2Txt1">Level:</div>
+            <div class="my-1" id="panel2Txt2">Reference:</div>
+            <div class="my-1" id="panel2Txt3">Control:</div>
+            <div class="my-1" id="panel2Txt4">Drive:</div>
+          </div>
+        </div>
+        <div class="col-4 col-sm-6">
+          <div class="d-flex flex-column">
+            <div class="my-1" id="panel2Val1">-</div>
+            <div class="my-1" id="panel2Val2">-</div>
+            <div class="my-1" id="panel2Val3">-</div>
+            <div class="my-1" id="panel2Val4">-</div>
           </div>
         </div>
       </div>
       <!-- Analyzer Only -->
-      <div class="row panelL panelAnalyzer my-2">
+      <div class="row panelL panelAnalyzer my-2 py-1" style="display: none;">
+        <div class="col-4 offset-2 col-sm-6 offset-sm-0">
+          <div class="d-flex flex-column" id="panelATxt">
+          </div>
+        </div>
+        <div class="col-4 col-sm-6 panelAnalyzer">
+          <div class="d-flex flex-column" id="panelAVal">
+          </div>
+        </div>
+      </div>
+      <!-- Progress Bar -->
+      <div class="row panelProgress my-2" style="display: none;">
         <div class="col">
-          <div class="d-flex flex-column">
-            <div class=""></div>
+          <div class="progress">
+            <div class="progress-bar" role="progressbar" style="width: 0%" id="progressbar"></div>
           </div>
         </div>
       </div>

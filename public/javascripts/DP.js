@@ -1,12 +1,14 @@
-var testCtr = ["CSC", "MMC", "RSD", "RVC", "SVC", "SRS"];
-var testAlyzr = ["APS", "COR", "DEM", "HIS", "MIO", "ORD", "REC", "SYN", "TRF"];
+var testCtrlr = ["CSC", "MMC", "RSD", "RVC", "SVC", "SRS"];
+var testAnlyzr = ["APS", "COR", "DEM", "HIS", "MIO", "ORD", "REC", "SYN", "TRF"];
 var fInterval = false;
 var vInterval = 1;
 var valIP, valPort;
 
 var dataTest;
-var testState, layoutState = 0;
+var testState = layoutState = panelTestState = panelLayoutState = 0;
 var measState = [];
+var curTest = "";
+var curTestIndex = curTestType = 0;
 
 function startInterval(){
 	fInterval = setInterval(function () {
@@ -18,6 +20,47 @@ function startInterval(){
 };
 
 function checkState(){
+	// Panel Layout State:
+	// 0: Empty
+	// 1: Full
+
+	// Panel Data State:
+	// 0: Same
+	// 1: Empty
+	// 2: Different
+
+	// PANEL STATE
+	switch ($("#testTab a.active").text()) {
+		case curTest:
+			panelTestState = 0;
+			break;
+		case "":
+			panelTestState = 1;
+			break;
+		default:
+			panelTestState = 2;
+			break;
+	};
+	curTest = $("#testTab a.active").text();
+	curTestIndex = $("#testTab a.active").index();
+
+	// Test Type:
+	// 0: Empty
+	// 1: Controller
+	// 2: Analyzer
+
+	if (curTest == "") {
+		curTestType = 0;
+	} else {
+		if (testCtrlr.includes(curTest)) {
+			curTestType = 1;
+		} else if (testAnlyzr.includes(curTest)) {
+			curTestType = 2;
+		} else {
+			console.log("Error: Unknown test type! - "+ curTest);
+		};
+	};
+
 	// REST Data:
 	// -1: No test / test open
 	// 0: Initalized
@@ -34,7 +77,7 @@ function checkState(){
 	// 5: Stopped
 	// 1: End
 
-	// test not loaded
+	// TEST & MEASUREMENT STATE
 	if (dataTest | dataTest.MeasStatus.length==0 ) {
 		measState = [0];
 		testState = 0;
@@ -64,7 +107,130 @@ function checkState(){
 			measState[i] = k;
 		};
 		testState = measState.sort()[0];
-	} // if test not loaded
+	};
+};
+
+function updatePanel(){
+	// get meas data
+	for (var i = 0; i < dataTest.MeasStatus.length; i++) {
+		if (curTest == dataTest.MeasStatus[i].Type) {
+			dataMeas = eval("dataTest.MeasStatus["+ i +"].RunStatus." + dataTest.MeasStatus[i].Type + "_Status");
+		};
+	};
+	switch (curTest) {
+		// Analyzer
+		case "APS":
+		case "COR":
+		case "DEM":
+		case "HIS":
+		case "MIO":
+		case "ORD":
+		case "REC":
+		case "SYN":
+		case "TRF":
+			for (var k = 0; k < Object.keys(dataMeas).length; k++) {
+				switch (Object.keys(dataMeas)[k]) {
+					case "Time":
+					eval("$('#dPanel"+ k + "').text('" + Object.values(dataMeas)[k].Display + "')");
+					break;
+					case "RecSize_Bytes":
+					eval("$('#dPanel"+ k + "').text('" + formatBytes(Object.values(dataMeas)[k]) + "')");
+					break;
+					case "WaitForTrig":
+					// toggleTrig("tab-Meas"+ i);
+					default:
+					eval("$('#dPanel"+ k +"').text("+ Object.values(dataMeas)[k] +")");
+					break;
+				};
+			};
+			break;
+
+		// Controller
+		case "RVC":
+		case "MMC":
+			// Panel 1
+			$('#panel1Val1').text(dataMeas.TimeRemaining.Display);
+			$('#panel1Val2').text(dataMeas.TimeAtLevel.Display);
+			$('#panel1Val3').text(dataMeas.TotalTime.Display);
+			// Panel 2
+			$('#panel2Val1').text(dataMeas.Level_dB.toPrecision(2) + " dB");
+			$('#panel2Val2').text(dataMeas.Ref.toPrecision(2) + " " + dataMeas.RefEU);
+			$('#panel2Val3').text(dataMeas.Control.toPrecision(4) + " " + dataMeas.ControlEU);
+			$('#panel2Val4').text(dataMeas.Drive.toPrecision(4) + " " + dataMeas.DriveEU);
+			// ProgressBar
+			$('#progressbar').attr("style","width: "+(dataMeas.Stage/dataMeas.TotalStages).toPrecision(2)*100+"%");
+			break;
+
+		case "SVC":
+		case "RSD":
+			// Panel 1
+			$('#panel1Val1').text(dataMeas.SweepsRemaining);
+			$('#panel1Val2').text(dataMeas.SweepsElapsed);
+			$('#panel1Val3').text(dataMeas.TotalTime.Display);
+			// Panel 2
+			$('#panel2Val1').text(dataMeas.Freq_Hz.toPrecision(2) + " Hz");
+			$('#panel2Val2').text(dataMeas.Control.toPrecision(4) + " " + dataMeas.ControlEU);
+			$('#panel2Val3').text(dataMeas.Disp.toPrecision(4) + " " + dataMeas.DispEU);
+			$('#panel2Val4').text(dataMeas.Drive.toPrecision(4) + " " + dataMeas.DriveEU);
+			// ProgressBar
+			$('#progressbar').attr("style","width: "+(dataMeas.Stage/dataMeas.TotalStages).toPrecision(2)*100+"%");
+			break;
+
+		case "CSC":
+		case "SRS":
+			// Panel 1
+			$('#panel1Val1').text(dataMeas.Remaining);
+			$('#panel1Val2').text(dataMeas.AtLevel);
+			$('#panel1Val3').text(dataMeas.Total);
+			// Panel 2
+			$('#panel2Val1').text(dataMeas.Level_dB.toPrecision(2) + " dB");
+			$('#panel2Val2').text(dataMeas.Ref.toPrecision(2) + " " + dataMeas.RefEU);
+			$('#panel2Val3').text(dataMeas.Control.toPrecision(4) + " " + dataMeas.ControlEU);
+			$('#panel2Val4').text(dataMeas.Drive.toPrecision(4) + " " + dataMeas.DriveEU);
+			// ProgressBar
+			$('#progressbar').attr("style","width: "+(dataMeas.Stage/dataMeas.TotalStages).toPrecision(2)*100+"%");
+			break;
+
+		default:
+			console.log("Error: Unknown test type! - "+ curTest);
+			break;
+	};
+};
+
+function updatePanelDisp(){
+	switch (measState[curTestIndex]) {
+		case 0:
+		case 1:
+		case 2:
+			$(".panelController").hide("slow");
+			$(".panelAnalyzer").hide("slow");
+			$(".panelProgress").hide("slow");
+			break;
+		case 3:
+		case 4:
+		case 5:
+			switch (curTestType) {
+				case 0:
+					$(".panelController").hide("slow");
+					$(".panelAnalyzer").hide("slow");
+					$(".panelProgress").hide("slow");
+					break;
+				case 1:
+					$(".panelController").show("slow");
+					$(".panelAnalyzer").hide("slow");
+					$(".panelProgress").show("slow");
+					break;
+				case 2:
+					$(".panelController").hide("slow");
+					$(".panelAnalyzer").show("slow");
+					$(".panelProgress").hide("slow");
+					break;
+				default:
+					console.log("Error: Unknown test type! - "+ curTestType);
+					break;
+			};
+			break;
+	};
 };
 
 function updatePage(){
@@ -74,6 +240,7 @@ function updatePage(){
 	// 2: Measurements
 	checkState();
 
+	// TEST
 	switch (testState) {
 		case 0:	// 0: None
 			switch (layoutState) {
@@ -84,7 +251,17 @@ function updatePage(){
 					deleteLayoutTest();
 					break;
 				default:
-					console.log("Error: testState=0, layoutState=?")
+					console.log("Error: testState="+testState+", layoutState="+layoutState)
+					break;
+			};
+			switch (panelLayoutState) {
+				case 0: // 0: Empty
+					break;
+				case 1:	// 1: Full
+					deletePanel();
+					break;
+				default:
+					deletePanel();
 					break;
 			};
 			btnState(0);
@@ -102,7 +279,17 @@ function updatePage(){
 					createLayoutTabs();
 					break;
 				default:
-					console.log("Error: testState=1, layoutState=?")
+					console.log("Error: testState="+testState+", layoutState="+layoutState)
+					break;
+			};
+			switch (panelLayoutState) {
+				case 0: // 0: Empty
+					break;
+				case 1:	// 1: Full
+					deletePanel();
+					break;
+				default:
+					deletePanel();
 					break;
 			};
 			btnState(4);
@@ -120,7 +307,17 @@ function updatePage(){
 					createLayoutTabs();
 					break;
 				default:
-					console.log("Error: testState=2, layoutState=?")
+					console.log("Error: testState="+testState+", layoutState="+layoutState)
+					break;
+			};
+			switch (panelLayoutState) {
+				case 0: // 0: Empty
+					break;
+				case 1:	// 1: Full
+					deletePanel();
+					break;
+				default:
+					deletePanel();
 					break;
 			};
 			btnState(1);
@@ -141,9 +338,35 @@ function updatePage(){
 					updateDataTest();
 					break;
 				default:
-					console.log("Error: testState=3, layoutState=?")
+					console.log("Error: testState="+testState+", layoutState="+layoutState)
 					break;
-			}
+			};
+			switch (panelLayoutState) {
+				case 0: // 0: Empty
+					createPanel();
+					updatePanel();
+					break;
+				case 1:	// 1: Full
+					switch (panelTestState) {
+						case 0: // 0: Same
+							updatePanel();
+							break;
+						case 1: // 1: Empty
+							deletePanel();
+							break;
+						case 2: // 2: Different
+							deletePanel();
+							createPanel();
+							break;
+						default:
+							console.log("Error: testState="+testState+", panelTestState="+panelTestState);
+							break;
+					};
+					break;
+				default:
+					deletePanel();
+					break;
+			};
 			btnState(2);
 			break;
 
@@ -162,9 +385,35 @@ function updatePage(){
 					updateDataTest();
 					break;
 				default:
-					console.log("Error: testState=4, layoutState=?")
+					console.log("Error: testState="+testState+", layoutState="+layoutState)
 					break;
-			}
+			};
+			switch (panelLayoutState) {
+				case 0: // 0: Empty
+					createPanel();
+					updatePanel();
+					break;
+				case 1:	// 1: Full
+					switch (panelTestState) {
+						case 0: // 0: Same
+							updatePanel();
+							break;
+						case 1: // 1: Empty
+							deletePanel();
+							break;
+						case 2: // 2: Different
+							deletePanel();
+							createPanel();
+							break;
+						default:
+							console.log("Error: testState="+testState+", panelTestState="+panelTestState);
+							break;
+					};
+					break;
+				default:
+					deletePanel();
+					break;
+			};
 			btnState(2);
 			break;
 
@@ -183,16 +432,43 @@ function updatePage(){
 					updateDataTest();
 					break;
 				default:
-					console.log("Error: testState=5, layoutState=?")
+					console.log("Error: testState="+testState+", layoutState="+layoutState)
 					break;
-			}
+			};
+			switch (panelLayoutState) {
+				case 0: // 0: Empty
+					createPanel();
+					updatePanel();
+					break;
+				case 1:	// 1: Full
+					switch (panelTestState) {
+						case 0: // 0: Same
+							updatePanel();
+							break;
+						case 1: // 1: Empty
+							deletePanel();
+							break;
+						case 2: // 2: Different
+							deletePanel();
+							createPanel();
+							break;
+						default:
+							console.log("Error: testState="+testState+", panelTestState="+panelTestState);
+							break;
+					};
+					break;
+				default:
+					deletePanel();
+					break;
+			};
 			btnState(3);
 			break;
 
 		default:
-			console.log("Error: testState=?")
+			console.log("Error: testState="+testState)
 			break;
 		};
+	updatePanelDisp();
 };
 
 function updateDataTest(){
@@ -202,6 +478,7 @@ function updateDataTest(){
 		// Populate content
 		for (var k = 0; k < Object.keys(dataMeas).length; k++) {
 			switch (Object.keys(dataMeas)[k]) {
+				// =--Analyzer--=
 				case "Time":
 					eval("$('#dMeas" + i + k + "').text('" + Object.values(dataMeas)[k].Display + "')");
 					break;
@@ -210,12 +487,163 @@ function updateDataTest(){
 					break;
 				case "WaitForTrig":
 				// toggleTrig("tab-Meas"+ i);
+				// =--Controller--=
+				case "Control":
+				case "Drive":
+					eval("$('#dMeas" + i + k + "').text(" + Object.values(dataMeas)[k].toPrecision(4) + ")");
+					break;
+				case "Level_dB":
+				case "Ref":
+				case "Freq_Hz":
+				case "Disp":
+					eval("$('#dMeas" + i + k + "').text(" + Object.values(dataMeas)[k].toPrecision(2) + ")");
+					break;
+				case "ControlEU":
+				case "DriveEU":
+				case "RefEU":
+				case "DispEU":
+					eval("$('#dMeas" + i + k + "').text(' " + Object.values(dataMeas)[k] + "')");
+					break;
+				case "TimeAtLevel":
+				case "TimeRemaining":
+				case "TotalTime":
+				case "TimeElapsed":
+					eval("$('#dMeas" + i + k + "').text('" + Object.values(dataMeas)[k].Display + "')");
+					break;
 				default:
 					eval("$('#dMeas"+ i + k +"').text("+ Object.values(dataMeas)[k] +")");
 					break;
 			};
 		};
 	};
+};
+
+function createPanel(){
+	txtPanelTxt = txtPanelVal = "";
+	switch (curTest) {
+		// Analyzer
+		case "APS":
+		case "COR":
+		case "DEM":
+		case "HIS":
+		case "MIO":
+		case "ORD":
+		case "REC":
+		case "SYN":
+		case "TRF":
+			// get meas data
+			for (var i = 0; i < dataTest.MeasStatus.length; i++) {
+				if (curTest == dataTest.MeasStatus[i].Type) {
+					dataMeas = eval("dataTest.MeasStatus["+ i +"].RunStatus." + dataTest.MeasStatus[i].Type + "_Status");
+					for (var k = 0; k < Object.keys(dataMeas).length; k++){
+						switch (Object.keys(dataMeas)[k]) {
+							case "Avg":
+								txtPanelTxt += "<div class='my-1'>Averages:</div>";
+								txtPanelVal += "<div class='my-1' id='"+ "dPanel"+ k +"'>-</div>";
+								break;
+							case "Frames":
+								txtPanelTxt += "<div class='my-1'>Frames:</div>";
+								txtPanelVal += "<div class='my-1' id='"+ "dPanel"+ k +"'>-</div>";
+								break;
+							case "Time":
+								txtPanelTxt += "<div class='my-1'>Time:</div>";
+								txtPanelVal += "<div class='my-1' id='"+ "dPanel"+ k +"'>-</div>";
+								break;
+							case "TotalSaves":
+								txtPanelTxt += "<div class='my-1'>Total Saves:</div>";
+								txtPanelVal += "<div class='my-1' id='"+ "dPanel"+ k +"'>-</div>";
+								break;
+							case "WFRecs":
+								txtPanelTxt += "<div class='my-1'>Waterfall Records:</div>";
+								txtPanelVal += "<div class='my-1' id='"+ "dPanel"+ k +"'>-</div>";
+								break;
+							case "WaitForTrig":
+								txtPanelTxt += "<div class='my-1'>Trigger State:</div>";
+								txtPanelVal += "<div class='my-1' id='"+ "dPanel"+ k +"'>-</div>";
+								break;
+							case "RecSize_Bytes":
+								txtPanelTxt += "<div class='my-1'>Record Size:</div>";
+								txtPanelVal += "<div class='my-1' id='"+ "dPanel"+ k +"'>-</div>";
+								break;
+							default:
+								txtPanelTxt += "<div class='my-1'>!Unknown Value!:</div>";
+								txtPanelVal += "<div class='my-1' id='"+ "dPanel"+ k +"'>-</div>";
+								break;
+						};
+					};
+				};
+			};
+			break;
+		case "RVC":
+		case "MMC":
+				// Panel 1 - Text
+				$("#panel1Txt1").text("Remaining:")
+				$("#panel1Txt2").text("At Level:")
+				$("#panel1Txt3").text("Total Time:")
+				// Panel 2 - Text
+				$("#panel2Txt1").text("Level:")
+				$("#panel2Txt2").text("Reference:")
+				$("#panel2Txt3").text("Control:")
+				$("#panel2Txt4").text("Drive:")
+			break;
+		case "SVC":
+		case "RSD":
+				// Panel 1 - Text
+				$("#panel1Txt1").text("Remaining:")
+				$("#panel1Txt2").text("Elapsed:")
+				$("#panel1Txt3").text("Total Time:")
+				// Panel 2 - Text
+				$("#panel2Txt1").text("Frequency:")
+				$("#panel2Txt2").text("Control:")
+				$("#panel2Txt3").text("Displ. (pk-pk):")
+				$("#panel2Txt4").text("Drive:")
+			break;
+		case "CSC":
+		case "SRS":
+				// Panel 1 - Text
+				$("#panel1Txt1").text("Remaining:")
+				$("#panel1Txt2").text("At Level:")
+				$("#panel1Txt3").text("Total:")
+				// Panel 2 - Text
+				$("#panel2Txt1").text("Level:")
+				$("#panel2Txt2").text("Reference:")
+				$("#panel2Txt3").text("Control:")
+				$("#panel2Txt4").text("Drive:")
+			break;
+		default:
+				$("#panel1Txt1").text("!Unknown!:")
+				$("#panel1Txt2").text("!Unknown!:")
+				$("#panel1Txt3").text("!Unknown!:")
+				$("#panel2Txt1").text("!Unknown!:")
+				$("#panel2Txt2").text("!Unknown!:")
+				$("#panel2Txt3").text("!Unknown!:")
+				$("#panel2Txt4").text("!Unknown!:")
+			break;
+	};
+
+	if (testAnlyzr.includes(curTest)){
+		$("#panelATxt").append(txtPanelTxt);
+		$("#panelAVal").append(txtPanelVal);
+	} else if (testCtrlr.includes(curTest)) {
+		// Panel 1 - Values
+		$("#panel1Val1").text("")
+		$("#panel1Val2").text("")
+		$("#panel1Val3").text("")
+		// Panel 2 - Values
+		$("#panel2Val1").text("")
+		$("#panel2Val2").text("")
+		$("#panel2Val3").text("")
+		$("#panel2Val4").text("")
+	} else {
+		console.log("Error: Unknown test!:"+curTest+" - can't fill / udpate panel");
+	};
+	panelLayoutState = 1;
+};
+
+function deletePanel(){
+	$("#panelATxt").empty();
+	$("#panelAVal").empty();
+	panelLayoutState = 0;
 };
 
 function createLayoutTabs(){
@@ -249,6 +677,7 @@ function createLayoutMeas(){
 
 			for (var k = 0; k < Object.keys(dataMeas).length; k++) {
 				switch (Object.keys(dataMeas)[k]) {
+					// =--Analyzer--=
 					case "Avg":
 						txtCont += "<tr><td>Averages: </td><td id='"+ "dMeas"+ i + k +"'></td></tr>";
 						break;
@@ -256,7 +685,6 @@ function createLayoutMeas(){
 						txtCont += "<tr><td>Frames: </td><td id='"+ "dMeas"+ i + k +"'></td></tr>";
 						break;
 					case "Time":
-						// txtCont += "<p><b>" + "Time: " + "</b>" + Object.values(d)[k].Display + "</p>";
 						txtCont += "<tr><td>Time: </td><td id='"+ "dMeas"+ i + k +"'></td></tr>";
 						break;
 					case "TotalSaves":
@@ -267,10 +695,82 @@ function createLayoutMeas(){
 						break;
 					case "WaitForTrig":
 						txtCont += "<tr><td>Trigger State: </td><td id='"+ "dMeas"+ i + k +"'></td></tr>";
-						// toggleTrig("tab-Meas"+ i);
 						break;
 					case "RecSize_Bytes":
 						txtCont += "<tr><td>Record Size: </td><td id='"+ "dMeas"+ i + k +"'></td></tr>";
+						break;
+					// =--Controller--=
+					// RVC // MMC
+					case "Control":
+						txtCont += "<tr><td>Control: </td><td id='"+ "dMeas"+ i + k +"' ></td>";
+						break;
+					case "ControlEU":
+						txtCont += "<td id='"+ "dMeas"+ i + k +"' ></td></tr>";
+						break;
+					case "Drive":
+						txtCont += "<tr><td>Drive: </td><td id='"+ "dMeas"+ i + k +"' ></td>";
+						break;
+					case "DriveEU":
+						txtCont += "<td id='"+ "dMeas"+ i + k +"' ></td></tr>";
+						break;
+					case "Level_dB":
+						txtCont += "<tr><td>Level: </td><td id='"+ "dMeas"+ i + k +"' ></td></tr>";
+						break;
+					case "Ref":
+						txtCont += "<tr><td>Reference: </td><td id='"+ "dMeas"+ i + k +"' ></td>";
+						break;
+					case "RefEU":
+						txtCont += "<td id='"+ "dMeas"+ i + k +"' ></td></tr>";
+						break;
+					case "Stage":
+						txtCont += "<tr><td>Stage: </td><td id='"+ "dMeas"+ i + k +"' ></td></tr>";
+						break;
+					case "TimeAtLevel":
+						txtCont += "<tr><td>At Level: </td><td id='"+ "dMeas"+ i + k +"' ></td></tr>";
+						break;
+					case "TimeRemaining":
+						txtCont += "<tr><td>Remaining Time: </td><td id='"+ "dMeas"+ i + k +"' ></td></tr>";
+						break;
+					case "TotalStages":
+						txtCont += "<tr><td>Total Stages: </td><td id='"+ "dMeas"+ i + k +"' ></td></tr>";
+						break;
+					case "TotalTime":
+						txtCont += "<tr><td>Total Time: </td><td id='"+ "dMeas"+ i + k +"' ></td></tr>";
+						break;
+					// SVC	// RSD
+					case "CyclesElapsed":
+						txtCont += "<tr><td>Cycles Elapsed: </td><td id='"+ "dMeas"+ i + k +"' ></td></tr>";
+						break;
+					case "CyclesRemaining":
+						txtCont += "<tr><td>Cycles Remaining: </td><td id='"+ "dMeas"+ i + k +"' ></td></tr>";
+						break;
+					case "Disp":
+						txtCont += "<tr><td>Displacement: </td><td id='"+ "dMeas"+ i + k +"' ></td>";
+						break;
+					case "DispEU":
+						txtCont += "<td id='"+ "dMeas"+ i + k +"' ></td></tr>";
+						break;
+					case "Freq_Hz":
+						txtCont += "<tr><td>Frequency: </td><td id='"+ "dMeas"+ i + k +"' ></td></tr>";
+						break;
+					case "SweepsElapsed":
+						txtCont += "<tr><td>Sweeps Elapsed: </td><td id='"+ "dMeas"+ i + k +"' ></td></tr>";
+						break;
+					case "SweepsRemaining":
+						txtCont += "<tr><td>Sweeps Remaining: </td><td id='"+ "dMeas"+ i + k +"' ></td></tr>";
+						break;
+					case "TimeElapsed":
+						txtCont += "<tr><td>Elapsed Time: </td><td id='"+ "dMeas"+ i + k +"' ></td></tr>";
+						break;
+					// CSC	// SRS
+					case "AtLevel":
+						txtCont += "<tr><td>At Level: </td><td id='"+ "dMeas"+ i + k +"' ></td></tr>";
+						break;
+					case "Remaining":
+						txtCont += "<tr><td>Remaining: </td><td id='"+ "dMeas"+ i + k +"' ></td></tr>";
+						break;
+					case "Total":
+						txtCont += "<tr><td>Total: </td><td id='"+ "dMeas"+ i + k +"' ></td></tr>";
 						break;
 					default:
 						txtCont += "<tr><td>!Unknown Value!: </td><td id='"+ "dMeas"+ i + k +"'></td></tr>";
@@ -447,7 +947,7 @@ $(document).ready(function(){
 		});
 	});
 	// Refresh Value
-	$('#valRefresh').change( function() {
+	$('#valRefresh').change( function(){
 		if (vInterval !== $(this).val()) {
 			vInterval = $(this).val();
 			localStorage.vInterval = $(this).val();
@@ -464,6 +964,7 @@ $(document).ready(function(){
 			$("#cmdStatus").text(data);
 		});
 		localStorage.nameTest = $("#nameTest").val();
+		deleteLayoutTest();
 	});
 	$("#btnClose").click( function(){
 		$.post("/api/closeTest", {valIP: valIP, valPort: valPort}, function(data,status){
@@ -472,12 +973,12 @@ $(document).ready(function(){
 	});
 	// Network
 	// IP
-	$('#valIP').change( function() {
+	$('#valIP').change( function(){
 		valIP = $("#valIP").val();
 		localStorage.valIP = $("#valIP").val();
 	});
 	// Port
-	$('#valPort').change( function() {
+	$('#valPort').change( function(){
 		valPort = $("#valPort").val();
 		localStorage.valPort = $("#valPort").val();
 	});

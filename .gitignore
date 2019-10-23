@@ -4,3 +4,4 @@ logs
 
 # Dependency directories
 node_modules/
+views/test.hbs

@@ -19,6 +19,10 @@ body{
   margin: 0px;
 }
 
+#btnRefresh {
+  color: #c9033b;
+}
+
 #valRefresh {
   width: 50px !important;
 }
@@ -42,6 +46,21 @@ body{
 
 .panelAnalyzer, .panelController {
 
+}
+
+.panelProgress .col{
+  padding: 0px;
+}
+
+.progress {
+  height: 24px;
+  border-radius: 4px;
+  padding: 4px;
+}
+
+.progress-bar {
+  border-radius: 4px;
+  background-color: #c9033b;
 }
 
 .panelBtns {
@@ -94,6 +113,14 @@ body{
   color: #9c022e;
 }
 
+.bg-dp-light {
+  background-color: #c9033b;
+}
+
+.text-dp-light {
+  color: #c9033b;
+}
+
 .footer {
   position: fixed;
   left: 0;
@@ -107,7 +134,7 @@ body{
 }
 
 .footer a {
-  color: #9c022e;
+  color: #c9033b;
 }
 
 /* .kitchen-sink-drawer-static {

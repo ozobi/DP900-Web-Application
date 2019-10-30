@@ -5,9 +5,9 @@
   "private": false,
   "scripts": {
     "start": "node app.js",
-	"debug": "nodemon app.js",
-	"debug-status": "nodemon $env:DEBUG='Status';node app.js",
-	"debug-api": "nodemon $env:DEBUG='API';node app.js"
+    "debug": "nodemon app.js",
+    "debug-status": "nodemon $env:DEBUG='Status';node app.js",
+    "debug-api": "nodemon $env:DEBUG='API';node app.js"
   },
   "dependencies": {
     "cookie-parser": "~1.4.4",
@@ -22,8 +22,8 @@
     "Data Physics",
     "DP900",
     "SignalCalc",
-	"Web Application",
-	"Remote Control"
+    "Web Application",
+    "Remote Control"
   ],
   "author": "Onur Zobi",
   "license": "MIT",

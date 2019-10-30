@@ -109,6 +109,10 @@ body{
   border-color: var(--red);
 }
 
+#btnRefresh, #btnOpen, #btnClose {
+  height: 39px;
+}
+
 .bg-dp {
   background-color: #9c022e;
 }

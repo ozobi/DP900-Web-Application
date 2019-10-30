@@ -44,8 +44,12 @@ body{
   margin: 0;
 }
 
-.panelAnalyzer, .panelController {
+.panelAnalyzer, .panelController, .panelStatus {
+  font-size: 90%;
+}
 
+#cmdState {
+  font-weight: bold;
 }
 
 .panelProgress .col{

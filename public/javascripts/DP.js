@@ -6,14 +6,33 @@ var valIP, valPort;
 
 var dataTest;
 var testState = layoutState = panelTestState = panelLayoutState = 0;
+var connectionState = prev_connectionState = 1;
 var measState = [];
-var curTest = "";
-var curTestIndex = curTestType = 0;
+var lastStopCode = [];
+var curMeas = stateLastCmd = prev_stateLastCmd = "";
+var curMeasIndex = curMeasType = 0;
 
 function startInterval(){
 	fInterval = setInterval(function () {
+		$.post("/api/stateLastCmd", {valIP: valIP, valPort: valPort}, function(data,status){
+		})
+		.done(function(data) {
+			connectionState = 1;
+			stateLastCmd = data;
+		})
+		.fail(function() {
+			connectionState = 0;
+			stateLastCmd = "";
+		});
+
 		$.post("/api/statusTest", {valIP: valIP, valPort: valPort}, function(data,status){
+		})
+		.done(function(data) {
 			dataTest = data;
+			updatePage();
+		})
+		.fail(function() {
+			dataTest = {"MeasStatus":[{"State":9}]};
 			updatePage();
 		});
 	},vInterval*1000);
@@ -31,7 +50,7 @@ function checkState(){
 
 	// PANEL STATE
 	switch ($("#testTab a.active").text()) {
-		case curTest:
+		case curMeas:
 			panelTestState = 0;
 			break;
 		case "":
@@ -41,23 +60,23 @@ function checkState(){
 			panelTestState = 2;
 			break;
 	};
-	curTest = $("#testTab a.active").text();
-	curTestIndex = $("#testTab a.active").index();
+	curMeas = $("#testTab a.active").text();
+	curMeasIndex = $("#testTab a.active").index();
 
 	// Test Type:
 	// 0: Empty
 	// 1: Controller
 	// 2: Analyzer
 
-	if (curTest == "") {
-		curTestType = 0;
+	if (curMeas == "") {
+		curMeasType = 0;
 	} else {
-		if (testCtrlr.includes(curTest)) {
-			curTestType = 1;
-		} else if (testAnlyzr.includes(curTest)) {
-			curTestType = 2;
+		if (testCtrlr.includes(curMeas)) {
+			curMeasType = 1;
+		} else if (testAnlyzr.includes(curMeas)) {
+			curMeasType = 2;
 		} else {
-			console.log("Error: Unknown test type! - "+ curTest);
+			console.log("Error: Unknown test type! - "+ curMeas);
 		};
 	};
 
@@ -76,160 +95,46 @@ function checkState(){
 	// 4: Running
 	// 5: Stopped
 	// 1: End
+	// 9: No Connection
 
 	// TEST & MEASUREMENT STATE
-	if (dataTest | dataTest.MeasStatus.length==0 ) {
+	if (dataTest | dataTest.MeasStatus | dataTest.MeasStatus.length==0 ) {
 		measState = [0];
+		lastStopCode = [0];
 		testState = 0;
 	} else {
-		var k;
 		for (var i = 0; i < dataTest.MeasStatus.length; i++) {
 			switch (dataTest.MeasStatus[i].State) {
 				case -1: // Test opened
-					k=1;
+					measState[i]=1;
+					lastStopCode[i]=null;
 					break;
 				case 0: // Initalized
-					k=2;
+					measState[i]=2;
+					lastStopCode[i]=null;
 					break;
 				case 1: // Pretest
-					k=3;
+					measState[i]=3;
+					lastStopCode[i]=dataTest.MeasStatus[i].RunStatus.LastStopCode;
 					break;
 				case 2: // Running
-					k=4;
+					measState[i]=4;
+					lastStopCode[i]=dataTest.MeasStatus[i].RunStatus.LastStopCode;
 					break;
 				case 3: // Stopped
-					k=5;
+					measState[i]=5;
+					lastStopCode[i]=dataTest.MeasStatus[i].RunStatus.LastStopCode;
+					break;
+				case 9: // No Connection
+					measState[i]=9;
+					lastStopCode[i]=null;
 					break;
 				default:
 					console.log("Error: MeasStatus["+i+"]");
 					break;
 			}
-			measState[i] = k;
 		};
 		testState = measState.sort()[0];
-	};
-};
-
-function updatePanel(){
-	// get meas data
-	for (var i = 0; i < dataTest.MeasStatus.length; i++) {
-		if (curTest == dataTest.MeasStatus[i].Type) {
-			dataMeas = eval("dataTest.MeasStatus["+ i +"].RunStatus." + dataTest.MeasStatus[i].Type + "_Status");
-		};
-	};
-	switch (curTest) {
-		// Analyzer
-		case "APS":
-		case "COR":
-		case "DEM":
-		case "HIS":
-		case "MIO":
-		case "ORD":
-		case "REC":
-		case "SYN":
-		case "TRF":
-			for (var k = 0; k < Object.keys(dataMeas).length; k++) {
-				switch (Object.keys(dataMeas)[k]) {
-					case "Time":
-					eval("$('#dPanel"+ k + "').text('" + Object.values(dataMeas)[k].Display + "')");
-					break;
-					case "RecSize_Bytes":
-					eval("$('#dPanel"+ k + "').text('" + formatBytes(Object.values(dataMeas)[k]) + "')");
-					break;
-					case "WaitForTrig":
-					// toggleTrig("tab-Meas"+ i);
-					default:
-					eval("$('#dPanel"+ k +"').text("+ Object.values(dataMeas)[k] +")");
-					break;
-				};
-			};
-			break;
-
-		// Controller
-		case "RVC":
-		case "MMC":
-			// Panel 1
-			$('#panel1Val1').text(dataMeas.TimeRemaining.Display);
-			$('#panel1Val2').text(dataMeas.TimeAtLevel.Display);
-			$('#panel1Val3').text(dataMeas.TotalTime.Display);
-			// Panel 2
-			$('#panel2Val1').text(dataMeas.Level_dB.toPrecision(2) + " dB");
-			$('#panel2Val2').text(dataMeas.Ref.toPrecision(2) + " " + dataMeas.RefEU);
-			$('#panel2Val3').text(dataMeas.Control.toPrecision(4) + " " + dataMeas.ControlEU);
-			$('#panel2Val4').text(dataMeas.Drive.toPrecision(4) + " " + dataMeas.DriveEU);
-			// ProgressBar
-			$('#progressbar').attr("style","width: "+(dataMeas.Stage/dataMeas.TotalStages).toPrecision(2)*100+"%");
-			break;
-
-		case "SVC":
-		case "RSD":
-			// Panel 1
-			$('#panel1Val1').text(dataMeas.SweepsRemaining);
-			$('#panel1Val2').text(dataMeas.SweepsElapsed);
-			$('#panel1Val3').text(dataMeas.TotalTime.Display);
-			// Panel 2
-			$('#panel2Val1').text(dataMeas.Freq_Hz.toPrecision(2) + " Hz");
-			$('#panel2Val2').text(dataMeas.Control.toPrecision(4) + " " + dataMeas.ControlEU);
-			$('#panel2Val3').text(dataMeas.Disp.toPrecision(4) + " " + dataMeas.DispEU);
-			$('#panel2Val4').text(dataMeas.Drive.toPrecision(4) + " " + dataMeas.DriveEU);
-			// ProgressBar
-			$('#progressbar').attr("style","width: "+(dataMeas.Stage/dataMeas.TotalStages).toPrecision(2)*100+"%");
-			break;
-
-		case "CSC":
-		case "SRS":
-			// Panel 1
-			$('#panel1Val1').text(dataMeas.Remaining);
-			$('#panel1Val2').text(dataMeas.AtLevel);
-			$('#panel1Val3').text(dataMeas.Total);
-			// Panel 2
-			$('#panel2Val1').text(dataMeas.Level_dB.toPrecision(2) + " dB");
-			$('#panel2Val2').text(dataMeas.Ref.toPrecision(2) + " " + dataMeas.RefEU);
-			$('#panel2Val3').text(dataMeas.Control.toPrecision(4) + " " + dataMeas.ControlEU);
-			$('#panel2Val4').text(dataMeas.Drive.toPrecision(4) + " " + dataMeas.DriveEU);
-			// ProgressBar
-			$('#progressbar').attr("style","width: "+(dataMeas.Stage/dataMeas.TotalStages).toPrecision(2)*100+"%");
-			break;
-
-		default:
-			console.log("Error: Unknown test type! - "+ curTest);
-			break;
-	};
-};
-
-function updatePanelDisp(){
-	switch (measState[curTestIndex]) {
-		case 0:
-		case 1:
-		case 2:
-			$(".panelController").hide("slow");
-			$(".panelAnalyzer").hide("slow");
-			$(".panelProgress").hide("slow");
-			break;
-		case 3:
-		case 4:
-		case 5:
-			switch (curTestType) {
-				case 0:
-					$(".panelController").hide("slow");
-					$(".panelAnalyzer").hide("slow");
-					$(".panelProgress").hide("slow");
-					break;
-				case 1:
-					$(".panelController").show("slow");
-					$(".panelAnalyzer").hide("slow");
-					$(".panelProgress").show("slow");
-					break;
-				case 2:
-					$(".panelController").hide("slow");
-					$(".panelAnalyzer").show("slow");
-					$(".panelProgress").hide("slow");
-					break;
-				default:
-					console.log("Error: Unknown test type! - "+ curTestType);
-					break;
-			};
-			break;
 	};
 };
 
@@ -343,6 +248,7 @@ function updatePage(){
 			};
 			switch (panelLayoutState) {
 				case 0: // 0: Empty
+					checkState();
 					createPanel();
 					updatePanel();
 					break;
@@ -390,6 +296,7 @@ function updatePage(){
 			};
 			switch (panelLayoutState) {
 				case 0: // 0: Empty
+					checkState();
 					createPanel();
 					updatePanel();
 					break;
@@ -437,6 +344,7 @@ function updatePage(){
 			};
 			switch (panelLayoutState) {
 				case 0: // 0: Empty
+					checkState();
 					createPanel();
 					updatePanel();
 					break;
@@ -464,11 +372,153 @@ function updatePage(){
 			btnState(3);
 			break;
 
+		case 9: // 9: No Connection
+			btnState(9);
+			break;
+
 		default:
 			console.log("Error: testState="+testState)
 			break;
 		};
+	updateLastCmd();
 	updatePanelDisp();
+};
+
+function updatePanel(){
+	// get meas data
+	for (var i = 0; i < dataTest.MeasStatus.length; i++) {
+		if (curMeas == dataTest.MeasStatus[i].Type) {
+			dataMeas = eval("dataTest.MeasStatus["+ i +"].RunStatus." + dataTest.MeasStatus[i].Type + "_Status");
+		};
+	};
+	switch (curMeas) {
+		// Analyzer
+		case "APS":
+		case "COR":
+		case "DEM":
+		case "HIS":
+		case "MIO":
+		case "ORD":
+		case "REC":
+		case "SYN":
+		case "TRF":
+			for (var k = 0; k < Object.keys(dataMeas).length; k++) {
+				switch (Object.keys(dataMeas)[k]) {
+					case "Time":
+					eval("$('#dPanel"+ k + "').text('" + Object.values(dataMeas)[k].Display + "')");
+					break;
+					case "RecSize_Bytes":
+					eval("$('#dPanel"+ k + "').text('" + formatBytes(Object.values(dataMeas)[k]) + "')");
+					break;
+					case "WaitForTrig":
+					// toggleTrig("tab-Meas"+ i);
+					default:
+					eval("$('#dPanel"+ k +"').text("+ Object.values(dataMeas)[k] +")");
+					break;
+				};
+			};
+			break;
+
+		// Controller
+		case "RVC":
+		case "MMC":
+			// Panel 1
+			$('#panel1Val1').text(dataMeas.TimeRemaining.Display);
+			$('#panel1Val2').text(dataMeas.TimeAtLevel.Display);
+			$('#panel1Val3').text(dataMeas.TotalTime.Display);
+			// Panel 2
+			$('#panel2Val1').text(dataMeas.Level_dB.toPrecision(2) + " dB");
+			$('#panel2Val2').text(dataMeas.Ref.toPrecision(2) + " " + dataMeas.RefEU);
+			$('#panel2Val3').text(dataMeas.Control.toPrecision(4) + " " + dataMeas.ControlEU);
+			$('#panel2Val4').text(dataMeas.Drive.toPrecision(4) + " " + dataMeas.DriveEU);
+			// ProgressBar
+			$('#progressbar').attr("style","width: "+(dataMeas.Stage/dataMeas.TotalStages).toPrecision(2)*100+"%");
+			$('#progressbar').text(dataMeas.Stage+"/"+dataMeas.TotalStages);
+			break;
+
+		case "SVC":
+		case "RSD":
+			// Panel 1
+			if(dataMeas.SweepsElapsed+dataMeas.SweepsRemaining > dataMeas.CyclesElapsed+dataMeas.CyclesRemaining){
+				$('#panel1Val1').text(dataMeas.SweepsRemaining + " Sweeps");
+				$('#panel1Val2').text(dataMeas.SweepsElapsed + " Sweeps");
+			} else {
+				$('#panel1Val1').text(dataMeas.CyclesRemaining + " Cycles");
+				$('#panel1Val2').text(dataMeas.CyclesElapsed + " Cycles");
+			}
+			$('#panel1Val3').text(dataMeas.TotalTime.Display);
+			// Panel 2
+			$('#panel2Val1').text(dataMeas.Freq_Hz.toPrecision(4) + " Hz");
+			$('#panel2Val2').text(dataMeas.Control.toPrecision(4) + " " + dataMeas.ControlEU);
+			$('#panel2Val3').text(dataMeas.Disp.toPrecision(4) + " " + dataMeas.DispEU);
+			$('#panel2Val4').text(dataMeas.Drive.toPrecision(4) + " " + dataMeas.DriveEU);
+			// ProgressBar
+			$('#progressbar').attr("style","width: "+(dataMeas.Stage/dataMeas.TotalStages).toPrecision(2)*100+"%");
+			$('#progressbar').text(dataMeas.Stage+"/"+dataMeas.TotalStages);
+			break;
+
+		case "CSC":
+		case "SRS":
+			// Panel 1
+			$('#panel1Val1').text(dataMeas.Remaining);
+			$('#panel1Val2').text(dataMeas.AtLevel);
+			$('#panel1Val3').text(dataMeas.Total);
+			// Panel 2
+			$('#panel2Val1').text(dataMeas.Level_dB.toPrecision(2) + " dB");
+			$('#panel2Val2').text(dataMeas.Ref.toPrecision(2) + " " + dataMeas.RefEU);
+			$('#panel2Val3').text(dataMeas.Control.toPrecision(4) + " " + dataMeas.ControlEU);
+			$('#panel2Val4').text(dataMeas.Drive.toPrecision(4) + " " + dataMeas.DriveEU);
+			// ProgressBar
+			$('#progressbar').attr("style","width: "+(dataMeas.Stage/dataMeas.TotalStages).toPrecision(2)*100+"%");
+			$('#progressbar').text(dataMeas.Stage+"/"+dataMeas.TotalStages);
+			break;
+
+		default:
+			console.log("Error: Unknown test type! - "+ curMeas);
+			break;
+	};
+};
+
+function updatePanelDisp(){
+	switch (measState[curMeasIndex]) {
+		case 0:
+		case 1:
+		case 2:
+			$(".panelController").hide("slow");
+			$(".panelAnalyzer").hide("slow");
+			$(".panelProgress").hide("slow");
+			break;
+		case 3:
+		case 4:
+		case 5:
+			switch (curMeasType) {
+				case 0:
+					$(".panelController").hide("slow");
+					$(".panelAnalyzer").hide("slow");
+					$(".panelProgress").hide("slow");
+					break;
+				case 1:
+					$(".panelController").show("slow");
+					$(".panelAnalyzer").hide("slow");
+					$(".panelProgress").show("slow");
+					break;
+				case 2:
+					$(".panelController").hide("slow");
+					$(".panelAnalyzer").show("slow");
+					$(".panelProgress").hide("slow");
+					break;
+				default:
+					console.log("Error: Unknown test type! - "+ curMeasType);
+					break;
+			};
+			break;
+		case 9:
+			$(".panelController").hide("slow");
+			$(".panelAnalyzer").hide("slow");
+			$(".panelProgress").hide("slow");
+			break;
+		break;
+	};
 };
 
 function updateDataTest(){
@@ -487,15 +537,16 @@ function updateDataTest(){
 					break;
 				case "WaitForTrig":
 				// toggleTrig("tab-Meas"+ i);
+					break;
 				// =--Controller--=
 				case "Control":
 				case "Drive":
+				case "Freq_Hz":
+				case "Disp":
 					eval("$('#dMeas" + i + k + "').text(" + Object.values(dataMeas)[k].toPrecision(4) + ")");
 					break;
 				case "Level_dB":
 				case "Ref":
-				case "Freq_Hz":
-				case "Disp":
 					eval("$('#dMeas" + i + k + "').text(" + Object.values(dataMeas)[k].toPrecision(2) + ")");
 					break;
 				case "ControlEU":
@@ -518,9 +569,51 @@ function updateDataTest(){
 	};
 };
 
+function updateLastCmd(){
+	switch (connectionState) {
+		case prev_connectionState: // Same
+		 	switch (connectionState) {
+				case 0: // Disconnected
+					break;
+				case 1: // Connected
+					// Command State
+					switch (stateLastCmd) {
+						case prev_stateLastCmd:
+						case "NONE":
+							break;
+						case "BUSY":
+							$("#cmdState").text(stateLastCmd);
+							break;
+						case "DONE":
+							$("#cmdState").text(stateLastCmd);
+							setTimeout(function(){$(".panelStatus").hide("slow")}, 3000);
+							break;
+						default:
+							console.log("Unknown var stateLastCmd: "+stateLastCmd);
+					};
+					prev_stateLastCmd = stateLastCmd;
+					break;
+			};
+			break;
+		case 0:  // Disconnected
+			$("#cmdStatus").text("Disconnected!");
+			$("#cmdState").text("");
+			$(".panelStatus").show("slow");
+			break;
+		case 1: // Connected
+			$("#cmdStatus").text("Connected!");
+			$("#cmdState").text("");
+			setTimeout(function(){$(".panelStatus").hide("slow")}, 3000);
+			break;
+		default:
+			console.log("Error: Unknown connectionState: " + connectionState);
+	};
+	prev_connectionState = connectionState;
+};
+
 function createPanel(){
 	txtPanelTxt = txtPanelVal = "";
-	switch (curTest) {
+	switch (curMeas) {
 		// Analyzer
 		case "APS":
 		case "COR":
@@ -533,7 +626,7 @@ function createPanel(){
 		case "TRF":
 			// get meas data
 			for (var i = 0; i < dataTest.MeasStatus.length; i++) {
-				if (curTest == dataTest.MeasStatus[i].Type) {
+				if (curMeas == dataTest.MeasStatus[i].Type) {
 					dataMeas = eval("dataTest.MeasStatus["+ i +"].RunStatus." + dataTest.MeasStatus[i].Type + "_Status");
 					for (var k = 0; k < Object.keys(dataMeas).length; k++){
 						switch (Object.keys(dataMeas)[k]) {
@@ -621,10 +714,10 @@ function createPanel(){
 			break;
 	};
 
-	if (testAnlyzr.includes(curTest)){
+	if (testAnlyzr.includes(curMeas)){
 		$("#panelATxt").append(txtPanelTxt);
 		$("#panelAVal").append(txtPanelVal);
-	} else if (testCtrlr.includes(curTest)) {
+	} else if (testCtrlr.includes(curMeas)) {
 		// Panel 1 - Values
 		$("#panel1Val1").text("")
 		$("#panel1Val2").text("")
@@ -635,7 +728,7 @@ function createPanel(){
 		$("#panel2Val3").text("")
 		$("#panel2Val4").text("")
 	} else {
-		console.log("Error: Unknown test!:"+curTest+" - can't fill / udpate panel");
+		console.log("Error: Unknown test!:"+curMeas+" - can't fill / udpate panel");
 	};
 	panelLayoutState = 1;
 };
@@ -805,6 +898,8 @@ function btnState(vState){
 			$("#btnResume").attr("hidden",true);
 			$("#btnResume").attr("disabled",true);
 			$("#btnEnd").attr("disabled",true);
+			$("#btnOpen").attr("disabled",false);
+			$("#btnClose").attr("disabled",true);
 		});
 			break;
 		case 1: // Initalized
@@ -816,6 +911,8 @@ function btnState(vState){
 			$("#btnResume").attr("hidden",true);
 			$("#btnResume").attr("disabled",true);
 			$("#btnEnd").attr("disabled",false);
+			$("#btnOpen").attr("disabled",true);
+			$("#btnClose").attr("disabled",true);
 		});
 			break;
 		case 2: // Running
@@ -827,6 +924,8 @@ function btnState(vState){
 			$("#btnResume").attr("hidden",true);
 			$("#btnResume").attr("disabled",true);
 			$("#btnEnd").attr("disabled",true);
+			$("#btnOpen").attr("disabled",true);
+			$("#btnClose").attr("disabled",true);
 		});
 			break;
 		case 3: // Stopped
@@ -836,8 +935,14 @@ function btnState(vState){
 			$("#btnStop").attr("hidden",true);
 			$("#btnStop").attr("disabled",true);
 			$("#btnResume").attr("hidden",false);
-			$("#btnResume").attr("disabled",false);
+			if (curMeasType == 1 && lastStopCode[curMeasIndex] == 0) { // Controllers don't resume
+				$("#btnResume").attr("disabled",true);
+			} else {
+				$("#btnResume").attr("disabled",false);
+			};
 			$("#btnEnd").attr("disabled",false);
+			$("#btnOpen").attr("disabled",true);
+			$("#btnClose").attr("disabled",true);
 		});
 			break;
 		case 4: // End
@@ -849,6 +954,25 @@ function btnState(vState){
 			$("#btnResume").attr("hidden",true);
 			$("#btnResume").attr("disabled",true);
 			$("#btnEnd").attr("disabled",true);
+			$("#btnOpen").attr("disabled",true);
+			$("#btnClose").attr("disabled",true);
+			$("#btnOpen").attr("disabled",false);
+			$("#btnClose").attr("disabled",false);
+		});
+			break;
+		case 9: // No Connection
+		$(function(){
+			$("#btnInit").attr("disabled",true);
+			$("#btnStart").attr("disabled",true);
+			$("#btnStop").attr("hidden",false);
+			$("#btnStop").attr("disabled",true);
+			$("#btnResume").attr("hidden",true);
+			$("#btnResume").attr("disabled",true);
+			$("#btnEnd").attr("disabled",true);
+			$("#btnOpen").attr("disabled",true);
+			$("#btnClose").attr("disabled",true);
+			$("#btnOpen").attr("disabled",true);
+			$("#btnClose").attr("disabled",true);
 		});
 			break;
 		default:
@@ -860,6 +984,8 @@ function btnState(vState){
 			$("#btnResume").attr("hidden",true);
 			$("#btnResume").attr("disabled",true);
 			$("#btnEnd").attr("disabled",true);
+			$("#btnOpen").attr("disabled",false);
+			$("#btnClose").attr("disabled",true);
 		});
 	}; //switch
 };
@@ -906,35 +1032,40 @@ $(document).ready(function(){
 	// Initalize
 	$("#btnInit").click( function(){
 		$.post("/api/initTest", {valIP: valIP, valPort: valPort}, function(data,status){
-			$("#cmdStatus").text(data);
+			$("#cmdStatus").text(data.replace(/\"/g,""));
+			$(".panelStatus").show("slow");
 		});
 		btnState(1);
 	});
 	// Start
 	$("#btnStart").click( function(){
 		$.post("/api/startTest", {valIP: valIP, valPort: valPort}, function(data,status){
-			$("#cmdStatus").text(data);
+			$("#cmdStatus").text(data.replace(/\"/g,""));
+			$(".panelStatus").show("slow");
 		});
 		btnState(2);
 	});
 	// Resume
 	$("#btnResume").click( function(){
 		$.post("/api/resumeTest", {valIP: valIP, valPort: valPort}, function(data,status){
-			$("#cmdStatus").text(data);
+			$("#cmdStatus").text(data.replace(/\"/g,""));
+			$(".panelStatus").show("slow");
 		});
 		btnState(2);
 	});
 	// Stop
 	$("#btnStop").click( function(){
 		$.post("/api/stopTest", {valIP: valIP, valPort: valPort}, function(data,status){
-			$("#cmdStatus").text(data);
+			$("#cmdStatus").text(data.replace(/\"/g,""));
+			$(".panelStatus").show("slow");
 		});
 		btnState(3);
 	});
 	// End
 	$("#btnEnd").click( function(){
 		$.post("/api/endTest", {valIP: valIP, valPort: valPort}, function(data,status){
-			$("#cmdStatus").text(data);
+			$("#cmdStatus").text(data.replace(/\"/g,""));
+			$(".panelStatus").show("slow");
 		});
 		btnState(4);
 	});
@@ -947,28 +1078,39 @@ $(document).ready(function(){
 		});
 	});
 	// Refresh Value
-	$('#valRefresh').change( function(){
-		if (vInterval !== $(this).val()) {
-			vInterval = $(this).val();
-			localStorage.vInterval = $(this).val();
-			//console.log(vInterval);
-			if (fInterval) {
-				clearInterval(fInterval);
-				startInterval();
-			};
+	$('#valRefresh').focusout( function(){
+		if ($(this).val() < 0.4) {
+			$(this).val(0.4);
+		} else if ($(this).val() > 4) {
+			$(this).val(4);
+		};
+		switch ($(this).val()) {
+			case "":
+			case vInterval:
+				break;
+			default:
+				vInterval = $(this).val();
+				localStorage.vInterval = $(this).val();
+				// console.log(vInterval);
+				if (fInterval) {
+					clearInterval(fInterval);
+					startInterval();
+				};
 		};
 	});
 	// Open / Close
 	$("#btnOpen").click( function(){
 		$.post("/api/openTest", {valIP: valIP, valPort: valPort, name:$("#nameTest").val()}, function(data,status){
-			$("#cmdStatus").text(data);
+			$("#cmdStatus").text(data.replace(/\"/g,""));
+			$(".panelStatus").show("slow");
 		});
 		localStorage.nameTest = $("#nameTest").val();
 		deleteLayoutTest();
 	});
 	$("#btnClose").click( function(){
 		$.post("/api/closeTest", {valIP: valIP, valPort: valPort}, function(data,status){
-			$("#cmdStatus").text(data);
+			$("#cmdStatus").text(data.replace(/\"/g,""));
+			$(".panelStatus").show("slow");
 		});
 	});
 	// Network

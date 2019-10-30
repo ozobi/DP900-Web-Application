@@ -11,7 +11,7 @@ const usersRouter = require('./routes/users');
 
 const app = express();
 const port = 3000
-app.listen(port, () => console.log(`Example app listening on port ${port}!`))
+app.listen(port, () => console.log(`DP900 Web App listening on port ${port}!`))
 
 // Register Handlebars view engine
 app.engine('.hbs', exphbs({
